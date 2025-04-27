@@ -1,0 +1,2 @@
+Another document for testing.
+This document contains different words.

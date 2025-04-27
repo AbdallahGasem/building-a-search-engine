@@ -1,0 +1,2 @@
+This is a sample document for testing the inverted index.
+It contains some words that will be indexed.
