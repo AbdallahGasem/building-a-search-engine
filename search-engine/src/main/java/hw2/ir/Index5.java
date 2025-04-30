@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 /**
@@ -27,27 +28,47 @@ public class Index5 {
      *
      * @param files Array of file paths to be indexed.
      */
-    public void buildIndex(String[] files) {
+    public void buildIndex(String[] files) {    // momken adelo list el source records w yemshy zay ma howa!
         int fid = 0; // Document ID counter
         for (String fileName : files) {
-            try (BufferedReader file = new BufferedReader(new FileReader(fileName))) {
+            try (BufferedReader file = new BufferedReader(new FileReader(fileName))) {    // NONEED
                 // Add document metadata to the sources map if not already present
                 if (!sources.containsKey(fid)) {
                     sources.put(fid, new SourceRecord(fid, fileName, fileName, "notext"));  // RE
                 }
-                String ln;
-                int flen = 0; // Word count for the current file
+                String ln;  // NONEED
+                int flen = 0; // Word count for the current file    // NONEED
+
                 // Read each line in the file and index it
                 while ((ln = file.readLine()) != null) {
                     flen += indexOneLine(ln, fid);
                 }
+
                 // Update the document length in the metadata
-                sources.get(fid).length = flen;
+                sources.get(fid).length = flen; // NONEED
             } catch (IOException e) {
                 System.out.println("File " + fileName + " not found. Skipping...");
             }
             fid++; // Increment document ID
         }
+    }
+
+    // new for crawler
+    public void buildWebIndex(LinkedList<SourceRecord> records) {    // momken adelo list el source records w yemshy zay ma howa!
+        int fid = 0; // Document ID counter, can be removed as i did an incremental counter in crawler for source docs!
+        for (SourceRecord record : records) {
+            // Add document metadata to the sources map if not already present
+            if (!sources.containsKey(fid)) {
+                sources.put(fid, record);
+            }
+
+            // Read each line in the file and index it, Reading a string from the source record now not from a file!
+            String[] lines = record.text.split("\\n");
+            for (String line : lines) {
+                indexOneLine(line, fid);
+            }
+        }
+        fid++; // Increment document ID
     }
 
     /**
@@ -221,7 +242,7 @@ public class Index5 {
 
         // Collect the results
         while (posting != null) {
-            result += "\t" + posting.docId + " - " + sources.get(posting.docId).title + "\n";
+            result += "\t" + posting.docId + " - " + sources.get(posting.docId).title + sources.get(posting.docId).getURL() + "\n";
             posting = posting.next;
         }
 
