@@ -95,4 +95,8 @@ public class DictEntry {
         doc_freq = df; // Initialize the document frequency.
         term_freq = tf; // Initialize the term frequency.
     }
+
+    Object stream() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 }

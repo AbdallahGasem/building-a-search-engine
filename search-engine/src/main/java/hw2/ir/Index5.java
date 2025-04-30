@@ -3,9 +3,12 @@ package hw2.ir;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * This class represents an inverted index that maps words to their occurrences
@@ -63,9 +66,9 @@ public class Index5 {
             }
 
             // Read each line in the file and index it, Reading a string from the source record now not from a file!
-            String[] words = record.text.split("\\W+"); 
+            String[] words = record.text.split("\\W+");
             // for (String line : lines) {
-                indexOneLine(words, fid);
+            indexOneLine(words, fid);
             // }
             fid++; // Increment document ID
         }
@@ -216,6 +219,9 @@ public class Index5 {
         String[] words = phrase.split("\\W+"); // Split the phrase into words
         int len = words.length;
 
+        // Debugging
+        System.out.println("PHRASE LENGTH: " + len);
+
         // Apply stemming to each word in the phrase
         for (int i = 0; i < len; i++) {
             words[i] = stemWord(words[i].toLowerCase()); // Stem the word
@@ -240,15 +246,191 @@ public class Index5 {
         }
 
         // Collect the results
+        Map<Integer, Double> scores = new HashMap<>();
         while (posting != null) {
-            result += "\t" + posting.docId + " - " + sources.get(posting.docId).getURL() + "\n";
+            double similarity = computeCosineSimilarity(posting.docId, phrase);
+            scores.put(posting.docId, similarity);
             posting = posting.next;
+        }
+
+        // Rank the documents by similarity
+        List<Integer> rankedDocs = scores.entrySet().stream()
+                .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        for (int docId : rankedDocs) {
+            result += "\t" + docId + " - " + sources.get(docId).getURL() + "\n";
         }
 
         if (result.isEmpty()) {
             return "No results found for: " + phrase;
         }
         return result;
+    }
+
+    /*
+     * @author George G
+     */
+    private boolean isStopWord(String word) {
+        String[] stopWords = {
+            "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
+            "has", "he", "in", "is", "it", "its", "of", "on", "that", "the",
+            "to", "was", "were", "will", "with"
+        };
+        return Arrays.asList(stopWords).contains(word);
+    }
+
+    /*
+     * 
+     * this function will be used to take the terms one by one to calc its TF and
+     * IDF
+     */
+    private double compute_TF_IDF(String term, int docId) {
+        if (!index.containsKey(term)) {
+            return 0.0;
+        }
+
+        // Get term frequency (TF) in the document
+        Posting posting = index.get(term).pList;
+        int tf = 0;
+        while (posting != null) {
+            if (posting.docId == docId) {
+                tf = posting.dtf; // Get term frequency in the document
+                break;
+            }
+            posting = posting.next;
+        }
+        if (tf == 0) {
+            return 0.0;
+        }
+
+        // TF weight: 1 + log10(tf)
+        double tfWeight = 1 + Math.log10(tf);
+
+        // IDF: log10(N / df)
+        int df = index.get(term).doc_freq; // Document frequency
+        double idf = Math.log10((double) N / df);
+
+        return tfWeight * idf;
+    }
+
+    /**
+     * Computes the TF-IDF vector for a document. now each document will have
+     * its terms and its TF_IDF values
+     */
+    private Map<String, Double> getDocumentVector(int docId) {
+        Map<String, Double> docVector = new HashMap<>();
+        for (var entry : index.entrySet()) {
+            String term = entry.getKey();
+            double tfidf = compute_TF_IDF(term, docId);
+            if (tfidf > 0) {
+                docVector.put(term, tfidf);
+            }
+        }
+        return docVector;
+    }
+
+    /**
+     * Computes the TF-IDF vector for a query.
+     */
+    private Map<String, Double> getQueryVector(String query) {
+        Map<String, Double> queryVector = new HashMap<>();
+        String[] words = query.split("\\W+");
+
+        for (String w : words) {
+            if (w.isEmpty()) {
+                continue;
+            }
+            w = w.toLowerCase();
+            if (isStopWord(w)) {
+                continue;
+            }
+            w = stemWord(w);
+
+            // Compute raw term frequency in the query
+            int tf = (int) Arrays.stream(words)
+                    .filter(W -> W.equalsIgnoreCase(W))
+                    .count();
+            if (tf == 0) {
+                continue;
+            }
+
+            // Compute TF weight: 1 + log10(tf)
+            double tfWeight = 1 + Math.log10(tf);
+
+            // Compute IDF (use the document collection's stats)
+            int df = index.getOrDefault(w, new DictEntry()).doc_freq;
+            double idf = (df == 0) ? 0 : Math.log10((double) N / df);
+
+            queryVector.put(w, tfWeight * idf);
+        }
+        return queryVector;
+    }
+
+    /*
+     * calculating cosine similarity
+     * cosine_similarity(d,q)=∥d∥*∥q∥/d⋅q
+     */
+    /**
+     * Computes norm of a vector.
+     */
+    private double computeNorm(Map<String, Double> vector) {
+        double sum = 0.0;
+        for (double value : vector.values()) {
+            sum += value * value;
+        }
+        return Math.sqrt(sum);
+    }
+
+    /**
+     * Computes the dot product of two vectors.
+     */
+    private double computeDotProduct(Map<String, Double> v1, Map<String, Double> v2) {
+        double dotProduct = 0.0;
+        for (String term : v1.keySet()) {
+            if (v2.containsKey(term)) {
+                dotProduct += v1.get(term) * v2.get(term);
+            }
+        }
+        return dotProduct;
+    }
+
+    /**
+     * Computes cosine similarity between a document and a query.
+     */
+    private double computeCosineSimilarity(int docId, String query) {
+        Map<String, Double> docVector = getDocumentVector(docId);
+        Map<String, Double> queryVector = getQueryVector(query);
+
+        double dotProduct = computeDotProduct(docVector, queryVector);
+        double docNorm = computeNorm(docVector);
+        double queryNorm = computeNorm(queryVector);
+
+        if (docNorm == 0 || queryNorm == 0) {
+            return 0.0;
+        }
+        return dotProduct / (docNorm * queryNorm);
+    }
+
+    // ranking
+    /**
+     * Ranks documents by cosine similarity to a query and returns the top 10.
+     */
+    public List<Integer> rankDocumentsByQuery(String query) {
+        // Map to store docId -> similarity score
+        Map<Integer, Double> scores = new HashMap<>();
+
+        for (int docId : sources.keySet()) {
+            double similarity = computeCosineSimilarity(docId, query);
+            scores.put(docId, similarity);
+        }
+        // Sort by similarity and return top 10 docIds
+        return scores.entrySet().stream()
+                .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
+                .limit(10)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     /**

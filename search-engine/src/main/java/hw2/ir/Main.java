@@ -20,47 +20,13 @@ public class Main {
     public static void main(String args[]) throws IOException {
         Index5 index = new Index5(); // Create an instance of the Index5 class
 
-        // // NONEED
-        // String filesDirectory = "E:\\FCAICU\\3rd-YEAR\\2nd-Term\\IR\\Assignments\\A2\\building-a-search-engine\\search-engine\\src\\test\\java"; // Change to your directory path   // input stuff needs to be edited !
-        // File file = new File(filesDirectory);   // NONEED
-        // // Get the list of files in the directory // NONEED
-        // String[] fileList = file.list();
-        // if (fileList == null) {
-        //     System.out.println("No files found in directory: " + filesDirectory);
-        //     return;
-        // }
-        // // Sort the file list alphabetically    // NONEED
-        // fileList = index.sort(fileList);
-        // index.N = fileList.length; // Set the number of documents
-        // // Prepend the directory path to each file name // NONEED
-        // for (int i = 0; i < fileList.length; i++) {
-        //     fileList[i] = filesDirectory + File.separator + fileList[i];
-        // }
         // crawler comes to play, later make user enter these
         Crawler crawler = new Crawler();
         LinkedList<SourceRecord> sources = crawler.crawl("https://en.wikipedia.org/wiki/List_of_pharaohs", "https://en.wikipedia.org/wiki/Pharaoh");
 
-        /* DEBUGGING */
-        // System.out.println("\n===================================Program Starting=================================\n");
-        // SourceRecord rec = crawler.scrapper("https://en.wikipedia.org/wiki/Pharaoh", 1);
-        // System.out.println("FID:==============================" + rec.fid);
-        // System.out.println("URL:==============================" + rec.URL);
-        // System.out.println(":==============================" + rec.length);
-        // System.out.println(":==============================" + rec.norm);
-        // try (BufferedWriter writer = new BufferedWriter(new FileWriter("TXoutput.txt"))) {
-        //     writer.write(rec.text);
-        // } catch (IOException e) {
-        //     System.err.println("Error writing to file: " + e.getMessage());
-        // }
-        // try (BufferedWriter writer = new BufferedWriter(new FileWriter("TToutput.txt"))) {
-        //     writer.write(rec.title);
-        // } catch (IOException e) {
-        //     System.err.println("Error writing to file: " + e.getMessage());
-        // }
-        // System.out.println("\n====================================Program Ending=================================\n");
         // // Build and store the index
         index.buildWebIndex(sources);
-        index.printDictionary(); // Print the dictionary (optional)
+        // index.printDictionary(); // Print the dictionary (optional)
         // Perform interactive search queries
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         String phrase;
@@ -73,5 +39,4 @@ public class Main {
             }
         } while (!phrase.isEmpty()); // Continue until the user presses Enter without typing a phrase
     }
-
 }
