@@ -41,7 +41,7 @@ public class Index5 {
 
                 // Read each line in the file and index it
                 while ((ln = file.readLine()) != null) {
-                    flen += indexOneLine(ln, fid);
+                    // flen += indexOneLine(ln, fid);
                 }
 
                 // Update the document length in the metadata
@@ -63,12 +63,12 @@ public class Index5 {
             }
 
             // Read each line in the file and index it, Reading a string from the source record now not from a file!
-            String[] lines = record.text.split("\\n");
-            for (String line : lines) {
-                indexOneLine(line, fid);
-            }
+            String[] words = record.text.split("\\W+"); 
+            // for (String line : lines) {
+                indexOneLine(words, fid);
+            // }
+            fid++; // Increment document ID
         }
-        fid++; // Increment document ID
     }
 
     /**
@@ -79,10 +79,9 @@ public class Index5 {
      * @param fid The document ID.
      * @return The number of words processed in the line.
      */
-    public int indexOneLine(String ln, int fid) {
-        int flen = 0; // Word count for the current line
-        String[] words = ln.split("\\W+"); // Split the line into words using non-word characters as delimiters
-        flen += words.length;
+    public int indexOneLine(String[] words, int fid) {
+        // String[] words = ln.split("\\W+"); // Split the line into words using non-word characters as delimiters
+        int flen = words.length;
 
         // Process each word in the line
         for (String word : words) {
@@ -242,7 +241,7 @@ public class Index5 {
 
         // Collect the results
         while (posting != null) {
-            result += "\t" + posting.docId + " - " + sources.get(posting.docId).title + sources.get(posting.docId).getURL() + "\n";
+            result += "\t" + posting.docId + " - " + sources.get(posting.docId).getURL() + "\n";
             posting = posting.next;
         }
 

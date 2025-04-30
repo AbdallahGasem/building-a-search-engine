@@ -93,6 +93,15 @@ public class Crawler {
             System.out.println("UrlScrapper(): Connection Error at Seed-2: " + seed2);
         }
 
+
+        // // print for debugging
+        // for (String url : validUrls) {
+        //     System.out.println(url);
+        // }
+
+
+
+
         return validUrls;
     }
 
@@ -117,15 +126,12 @@ public class Crawler {
 
             // 2- start scrapping the textual data, and for the first scarpe round make a queue for the links
             Element content = doc.getElementById("bodyContent");
-            Elements title = doc.getElementsByTag("h1"); // problem
+            Element title = doc.getElementById("firstHeading"); 
 
-            // ===================================================================//
-            // Element title = doc.getElementById("firstHeading"); // problem
-            // String textualContent = title.text();   // problem
-            // ===================================================================//
-            String textualContent = title.get(0).text();
-            String textualTitle = content.text();
-            int ln = textualTitle.length();
+            
+            String textualTitle = title.text();
+            String textualContent = content.text();   
+            int ln = textualContent.length();
 
             // 3- make return a sourceRecord format for each scrape round, set norm to zero for now
             SourceRecord record = new SourceRecord(fid, seedURL, textualTitle, ln, 0.0, textualContent);
@@ -155,7 +161,7 @@ public class Crawler {
         Integer fid = 0;
 
         // Crawling counter limited to 10 URLs
-        Integer cc = 1;    // 10 links + 2 for seeds
+        Integer cc = 12;    // 10 links + 2 for seeds
 
         // 1- get all the potential URLs to be scarped
         LinkedList<String> validUrls = urlScrapper(seed1, seed2);
